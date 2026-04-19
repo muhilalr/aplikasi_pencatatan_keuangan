@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:project_flutter/models/transaction_with_category.dart';
 import 'category.dart';
 import 'transaction.dart';
 
@@ -36,6 +37,24 @@ class AppDatabase extends _$AppDatabase {
 
   Future deleteCategoryRepo(int id) async {
     return (delete(categories)..where((t) => t.id.equals(id))).go();
+  }
+
+  // Transaction
+  Stream<List<TransactionWithCategory>> getTransactionByDateRepo(
+    DateTime date,
+  ) {
+    final query = (select(transactions).join([
+      innerJoin(categories, categories.id.equalsExp(transactions.category_id)),
+    ])..where(transactions.transaction_date.equals(date)));
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        return TransactionWithCategory(
+          row.readTable(transactions),
+          row.readTable(categories),
+        );
+      }).toList();
+    });
   }
 
   static QueryExecutor _openConnection() {
